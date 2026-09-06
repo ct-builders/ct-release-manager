@@ -110,7 +110,16 @@ function makeCt(cfg: () => CtConfig): CtClient {
     del: <T>(path: string) => req<T>("DELETE", path),
     upload,
     enc: (v: string) => encodeURIComponent(v),
-    projectKey: cfg().projectKey,
+    // A getter, not `cfg().projectKey`. Reading it eagerly here would call cfg()
+    // at module-import time, and cfg() goes through lib/env.ts's throwing
+    // getters — so importing this module would demand credentials, which is
+    // exactly what those lazy getters exist to avoid. `next build` collects
+    // route configuration by importing every module, so an eager read fails the
+    // production build on any checkout without a .env.local, credentials being
+    // needed at request time and not to compile.
+    get projectKey() {
+      return cfg().projectKey;
+    },
   };
 }
 

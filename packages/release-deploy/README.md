@@ -5,9 +5,9 @@ Author promotions and product changes on a **stage** project, QA them on a stage
 storefront, then deploy an approved **release** (a group of products + promotions)
 into the **live** project — matched **by key**, idempotently.
 
-Runs as a zero-build Node HTTP service (GCP Cloud Run today; commercetools
-Connect later). The Merchant Center "Release Deployments" custom app
-(`mc-releases`) drives it.
+Runs as a zero-build, zero-dependency Node HTTP service on any container host.
+Three front ends drive it over that HTTP contract: the `console` package, and the
+`mc-releases` and `mc-branch-editor` Merchant Center custom applications.
 
 ## Why key-based
 
@@ -20,8 +20,8 @@ pipeline touches is keyed:
   customer groups, channels, discount groups, code→cart-discount) are emitted as
   **key-based ResourceIdentifiers**, which CT resolves in the target project.
 - Ids embedded inside predicate strings are captured per-discount in a
-  `referenceMap` and rewritten source-id → target-id at deploy (a no-op when
-  predicates are already key-based, as they are in your-live-project).
+  `referenceMap` and rewritten source-id → target-id at deploy — a no-op when the
+  predicates are already key-based.
 - Embedded prices are matched by their `key`; a price's scope (currency / country
   / channel / customer group / validity) is baked into the key.
 
@@ -57,10 +57,18 @@ node bin/notify-check.mjs   <email> [--event submitted|approved|published|reject
 Deploy is **dry-run by default**; pass `--apply` to write. It refuses to deploy
 if any reference is unresolved in the source or missing in the target.
 
-**Cross-project ref attributes.** Products carry a `fitmentList` key-value-document
-reference whose id is per-project. Pass `--remap-ref-attrs auto` (deploy/validate) to
-build the live-id→target-id map by matching CustomObject keys (`--ref-containers`
-defaults to `fitment-list,vehicle`), or `--remap-ref-attrs <file.json>` for a prebuilt map.
+**Cross-project ref attributes.** A product attribute of type `reference` to a
+`key-value-document` holds a per-project id, so it cannot port by key the way the rest of
+a bundle does. Pass `--remap-ref-attrs auto` (on deploy, validate or rebaseline) to build
+the source-id → target-id map by matching CustomObject keys, naming the containers to
+match with `--ref-containers`, or `--remap-ref-attrs <file.json>` for a prebuilt map. An
+id the map does not cover has the attribute dropped rather than guessed at.
+
+**Pass it if your products have one.** Without the flag those attributes are copied
+through **verbatim**, carrying the source project's ids — which in the target resolve to
+nothing, or to whatever unrelated document happens to hold that id. The deploy succeeds
+either way, so this is a silent wrong answer rather than an error. `--strip-ref-attrs` is
+the other honest option: drop them all and set them afterwards.
 
 **`rebaseline`** pulls the entire catalog (products + categories + all promotions)
 `--from live --to stage` (defaults), auto-remapping ref-attr ids — resetting the stage
@@ -68,17 +76,36 @@ authoring baseline to production. Dry-run by default; `--apply` to write.
 
 ## Releases
 
-A release groups products + promotions and carries a lifecycle:
+A release groups products + promotions and carries a lifecycle. Two publishes — to the
+authoring project for review, then to production:
 
 ```
-draft → testing → approved → deployed
-              ↑        ↑          │
-              └────────┴──── rolled-back
+draft ──▶ ready-for-review ──▶ approved ──▶ published ──▶ rolled-back
 ```
 
-Stored as CustomObjects in the **stage** project (`release-registry` container).
-Approval requires `approver ≠ author`. Each deploy records an audit entry and a
-content hash; the app flags **drift** when stage content changes after a deploy.
+Every legal edge, which is `TRANSITIONS` in [`lib/registry.mjs`](lib/registry.mjs).
+Anything else is refused:
+
+| From | May become | On |
+|---|---|---|
+| `draft` | `ready-for-review` | publish to the authoring project for review |
+| `ready-for-review` | `approved` | approve |
+| | `draft` | reject, note required |
+| `approved` | `published` | a successful deploy to production |
+| | `draft` | send back for revisions |
+| `published` | `published` | re-deploy |
+| | `rolled-back` | undeploy from production |
+| | `draft` | start the next revision |
+| `rolled-back` | `published` | re-deploy |
+| | `draft` | start the next revision |
+
+A transition to the state a release is already in is always allowed, which is what makes
+re-deploying a `published` release a normal operation rather than a special case.
+
+Stored as CustomObjects in the authoring project (`release-registry` container).
+Approval requires `approver ≠ author`, unless the approver is an admin. Each deploy
+records an audit entry and a content hash, so the front ends can flag **drift** when
+authoring content changes after a deploy.
 
 ## HTTP service
 
@@ -97,6 +124,20 @@ content hash; the app flags **drift** when stage content changes after a deploy.
 | POST | `/releases/:key/validate` | resolve + check refs vs target |
 | POST | `/releases/:key/diff` | dry-run per-resource actions + drift |
 | POST | `/releases/:key/deploy` | deploy (`apply:true` to write) + audit |
+| POST | `/releases/:key/undeploy` | restore production to the deploy's baseline |
+| POST | `/releases/:key/merge` | apply a field-level merge onto the trunk |
+| POST | `/releases/:key/stage-publish` | publish the release's products on the authoring project |
+| GET | `/catalog/members` | pickable keyed resources for a member picker (cached 120s) |
+| GET\|PUT | `/config` | auto-add configuration |
+| POST | `/events` | Pub/Sub push of a commercetools change → auto-add |
+| GET | `/branches`, `/branches/:id` | list / read a working copy |
+| POST | `/branches`, `/branches/:id/status`, `/branches/:id/close` | create / transition / close |
+| POST | `/branches/:id/fork` | fork a canonical resource onto a branch |
+| POST | `/branches/:id/assets/:asset/save`, `/restore` | checkpoint / restore a version |
+| GET | `/branches/:id/assets/:asset/versions` | version list |
+| POST | `/branches/:id/merge-report` | classify each asset: mergeable / add / conflict |
+| POST | `/products/:key/publish` | publish one product by canonical key, both projects |
+| GET\|POST | `/acl`, `GET /acl/me`, `DELETE /acl/:key` | the roster |
 | POST | `/deploy` | ad-hoc deploy (no release) |
 
 ## Email notifications
@@ -138,13 +179,17 @@ intended email to the service log instead of sending, so the workflow runs witho
 real email account and you can read the notifications in the service log. Verify a
 real provider end-to-end with `node bin/notify-check.mjs you@example.com`.
 
-## Status
+## Tests
 
-- ✅ key audit + backfill (live is 100% keyed)
-- ✅ serializer + reference resolver (verified against live)
-- ✅ deploy engine — create / noop / update / delete (verified live-safe)
-- ✅ release grouping + lifecycle + audit
-- ✅ HTTP service
-- ✅ email notifications on lifecycle transitions (best-effort, provider by env)
-- ⏳ `your-stage-project` project + reference-data clone (needs org-level provisioning)
-- ⏳ `mc-releases` Merchant Center app
+```bash
+npm test            # 57 unit tests, no credentials, no network, ~150ms
+npm run test:e2e    # writes to two real commercetools projects
+```
+
+The unit suite covers branch encoding and canonicalization, the compare-and-swap branch
+registry under concurrent writes, field-level merge conflicts, deploy and publish,
+production history, the approve gate, and notification recipient resolution.
+
+`test:e2e` refuses to run unless the resolved project key matches `E2E_STAGE_PROJECT`,
+which is the only thing between a stray `RUN_E2E=1` and a real catalog. See
+[`test/README-e2e.md`](test/README-e2e.md).
