@@ -21,7 +21,10 @@ const config = {
   // gateway (see src/sdk/use-ctp.ts) and need no extra CSP entry.
   additionalEnv: {
     deployServiceUrl: 'https://release-deploy-REPLACE-ME.us-central1.run.app',
-    deployServiceToken: 'c7b17f633b4bc10485e5f61832acab299c8d31d49113cd49',
+    // A Custom Application is a static bundle with no server of its own: every
+    // value here ships to the browser and is readable by anyone who loads the
+    // app. Nothing secret belongs in it, so this stays a placeholder.
+    deployServiceToken: 'REPLACE-ME',
   },
   headers: {
     csp: {

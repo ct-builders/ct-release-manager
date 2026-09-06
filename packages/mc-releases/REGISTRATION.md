@@ -11,8 +11,12 @@ The app calls the `release-deploy` service from the browser. Deploy it
 1. Set `additionalEnv.deployServiceUrl` in `custom-application-config.mjs` to that URL.
 2. Add the same origin to `headers.csp['connect-src']` (already includes localhost +
    an `example.com` placeholder — replace with the real origin).
-3. If the service runs with `DEPLOY_SERVICE_TOKEN`, set `additionalEnv.deployServiceToken`
-   to match (note: it ships to the browser bundle — acceptable for an internal tool behind SSO).
+3. Leave `additionalEnv.deployServiceToken` as the placeholder. `additionalEnv` is
+   public: a Custom Application is a static bundle with no server of its own, so
+   every value in it is served to the browser in a `window.app` blob that any
+   unauthenticated visitor to the Netlify URL can read. Merchant Center SSO governs
+   the Merchant Center, not this origin. A shared bearer placed here is a credential
+   published to everyone — give the service one that identifies the caller instead.
 
 ## 1. Build
 

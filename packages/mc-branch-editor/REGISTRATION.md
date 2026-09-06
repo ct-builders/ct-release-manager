@@ -10,7 +10,12 @@ MC API gateway (the logged-in user's permissions).
 The app calls `release-deploy` (Cloud Run) for `/branches*` endpoints. It's
 already deployed at the URL in `custom-application-config.mjs`
 (`additionalEnv.deployServiceUrl`), and that origin is in `headers.csp['connect-src']`.
-The `DEPLOY_SERVICE_TOKEN` is baked into the bundle (acceptable for an internal tool behind SSO).
+`additionalEnv` is public. A Custom Application is a static bundle with no server
+of its own, so everything in `additionalEnv` is served to the browser — it lands in
+a `window.app` blob in the app's HTML, which any unauthenticated visitor to the
+Netlify URL can read. Merchant Center SSO governs the Merchant Center, not this
+origin. Keep `additionalEnv` to non-secrets, and give the service a credential
+that identifies the caller rather than a shared one every reader of the page holds.
 
 ## 1. Build
 
