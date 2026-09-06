@@ -1,0 +1,8 @@
+{
+  "extends": "@commercetools-frontend/application-config/tsconfig-mc-app.json",
+  "compilerOptions": {
+    "preserveSymlinks": false,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}

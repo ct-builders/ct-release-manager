@@ -1,0 +1,103 @@
+<!doctype html>
+<!--
+  publish-prompt.harness.html — a standalone BROWSER harness that mirrors the
+  post-approval publish-prompt behaviour built into
+  src/components/releases/release-detail.tsx.
+
+  The Merchant Center app itself renders inside an authenticated MC iframe, which
+  is impractical to drive headlessly. This harness reproduces the exact modal
+  markup + the decision it makes so the UI behaviour can be verified in a real
+  browser (and by the automated preview check) without an MC session:
+
+    • Approve while "approver can publish" is ON  → the publish-prompt modal appears.
+        - "Publish to production" → confirms + runs the (mocked) deploy.
+        - "Not now"               → dismisses with a note.
+    • Approve while "approver can publish" is OFF → no modal; an info note tells the
+        reviewer a publisher must publish it.
+
+  Keep in sync with release-detail.tsx (doApprove / doDeploy / the modal JSX).
+  For the fully-authenticated click-path through the real MC app, see README.md.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Release publish-prompt harness</title>
+  <style>
+    body { font-family: -apple-system, system-ui, sans-serif; background: #f6f7f9; color: #1f2937; margin: 0; padding: 32px; }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; margin-bottom: 16px; }
+    h2 { margin: 0 0 4px; font-size: 22px; }
+    .sub { color: #6b7280; font-size: 13px; margin: 0 0 12px; }
+    .badge { display: inline-block; background: #e0e7ff; color: #3730a3; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: 700; }
+    button { font: inherit; border-radius: 6px; padding: 8px 14px; cursor: pointer; border: 1px solid transparent; }
+    .primary { background: #3c41c9; color: #fff; }
+    .secondary { background: #fff; color: #3c41c9; border-color: #c7cad6; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .msg-ok { border: 1px solid #b7ebc9; background: #f2fbf5; color: #0f7a44; }
+    .msg { border-radius: 8px; padding: 14px; }
+    label.toggle { display: inline-flex; gap: 8px; align-items: center; font-size: 14px; }
+    /* modal */
+    .overlay { position: fixed; inset: 0; background: rgba(17,24,39,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+    .modal { background: #fff; border-radius: 10px; padding: 24px; max-width: 460px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.25); }
+    .modal h3 { margin: 0 0 8px; font-size: 18px; }
+    .modal p { margin: 0 0 18px; color: #4b5563; font-size: 14px; line-height: 1.5; }
+    .modal .row { justify-content: flex-end; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h2>E2E Release <span class="badge" id="status">ready-for-review</span></h2>
+      <p class="sub">e2e-rel-demo · author author@example.com · approver —</p>
+      <div class="row">
+        <label class="toggle"><input type="checkbox" id="canPublish" checked /> approver can publish</label>
+        <button class="primary" id="approve" data-testid="approve">Approve</button>
+      </div>
+    </div>
+
+    <div id="note" class="card msg msg-ok hidden" data-testid="note"></div>
+  </div>
+
+  <!-- post-approval publish prompt (mirrors release-detail.tsx) -->
+  <div id="overlay" class="overlay hidden" data-testid="publish-prompt-overlay" role="dialog" aria-modal="true" aria-label="Publish to production?">
+    <div class="modal">
+      <h3>Publish to production now?</h3>
+      <p>You just approved <strong>E2E Release</strong>, and you also have publish rights. Would you like to publish it to production (live / your-live-project) now? Otherwise it will wait in <em>approved</em> for a publisher.</p>
+      <div class="row">
+        <button class="secondary" id="dismiss" data-testid="publish-prompt-dismiss">Not now</button>
+        <button class="primary" id="confirm" data-testid="publish-prompt-confirm">Publish to production</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const showNote = (text) => { const n = $('note'); n.textContent = text; n.classList.remove('hidden'); };
+    const hideNote = () => $('note').classList.add('hidden');
+    const openModal = () => $('overlay').classList.remove('hidden');
+    const closeModal = () => $('overlay').classList.add('hidden');
+
+    // doApprove(): approve, then branch on the approver's publish capability.
+    $('approve').addEventListener('click', () => {
+      hideNote();
+      $('status').textContent = 'approved';
+      if ($('canPublish').checked) openModal();                     // offer-self-publish
+      else showNote('Approved. A publisher needs to publish this release to production.'); // defer-to-publisher
+    });
+
+    // "Publish to production" → (mocked) deploy
+    $('confirm').addEventListener('click', () => {
+      closeModal();
+      $('status').textContent = 'published';
+      showNote('Published to production: create 3, update 0, noop 0, error 0');
+    });
+    // "Not now" → dismiss
+    $('dismiss').addEventListener('click', () => {
+      closeModal();
+      showNote('Approved. Publish to production when you’re ready.');
+    });
+  </script>
+</body>
+</html>

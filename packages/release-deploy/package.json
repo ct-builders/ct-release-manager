@@ -1,0 +1,17 @@
+{
+  "name": "release-deploy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The release state machine and every production write for a commercetools project pair: serializes a keyed release bundle (products + promotions) from a source project and upserts it by key into a target. Runs as a zero-dependency Node HTTP service on any container host, and as a CLI.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "cli": "node bin/cli.mjs",
+    "audit": "node bin/cli.mjs audit",
+    "test": "node --test",
+    "test:e2e": "RUN_E2E=1 node --test test/e2e-release.test.mjs"
+  }
+}

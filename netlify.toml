@@ -1,0 +1,10 @@
+# Monorepo root. The Netlify site for the console builds from packages/console;
+# everything else about the build — command, publish directory, Node version, the
+# Next.js plugin, the analytics proxy and the edge gate — comes from that package's
+# own netlify.toml, which Netlify reads out of the base directory.
+#
+# The two Merchant Center apps are separate Netlify sites with their own base
+# directories (packages/mc-releases, packages/mc-branch-editor) and their own
+# netlify.toml files. This file does not affect them.
+[build]
+  base = "packages/console"

@@ -1,0 +1,18 @@
+# Netlify config for the "Branch Editor" Merchant Center Custom Application.
+# Static SPA: build with mc-scripts, publish the generated `public/`, rewrite all
+# routes to index.html for client-side routing. The Netlify site's base directory
+# must be set to packages/mc-branch-editor (monorepo).
+
+[build]
+  command = "npm run build"
+  publish = "public"
+
+[build.environment]
+  NODE_VERSION = "22"
+  MC_APP_ENV = "production"
+  NODE_ENV = "production"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

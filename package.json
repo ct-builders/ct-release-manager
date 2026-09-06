@@ -1,0 +1,29 @@
+{
+  "name": "ct-release-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Release management for a commercetools catalog: an authoring console, the deploy service that ships a release to production, and two Merchant Center custom applications.",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "install:all": "npm --prefix packages/console install && npm --prefix packages/mc-releases install && npm --prefix packages/mc-branch-editor install",
+
+    "dev": "npm --prefix packages/console run dev",
+    "service": "npm --prefix packages/release-deploy start",
+
+    "test": "npm --prefix packages/release-deploy test",
+    "typecheck": "npm --prefix packages/console run typecheck && npm --prefix packages/mc-releases run typecheck && npm --prefix packages/mc-branch-editor run typecheck",
+    "lint": "npm --prefix packages/console run lint && npm --prefix packages/mc-releases run lint && npm --prefix packages/mc-branch-editor run lint",
+    "build": "npm --prefix packages/console run build",
+    "predeploy": "npm test && npm run typecheck && npm run lint && npm run build",
+
+    "test:e2e": "npm --prefix packages/release-deploy run test:e2e",
+
+    "service:cli": "npm --prefix packages/release-deploy run cli --",
+    "service:audit": "npm --prefix packages/release-deploy run audit",
+
+    "mc:releases:start": "npm --prefix packages/mc-releases start",
+    "mc:releases:build": "npm --prefix packages/mc-releases run build",
+    "mc:branch-editor:start": "npm --prefix packages/mc-branch-editor start",
+    "mc:branch-editor:build": "npm --prefix packages/mc-branch-editor run build"
+  }
+}

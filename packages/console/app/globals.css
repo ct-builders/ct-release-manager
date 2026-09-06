@@ -1,0 +1,54 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 commercetools GmbH and the ct-builders contributors
+ * Freely available, AS IS and UNSUPPORTED. See LICENSE.
+ */
+
+@import "tailwindcss";
+
+/* Release Manager — light theme only (no dark mode).
+   commercetools brand palette: purple accent (#6359FF) on cool neutrals,
+   ink #191741 for text. Red is reserved strictly for destructive/error
+   states (--critical). */
+:root {
+  --background: #f6f6fb; /* light lilac-tinted neutral */
+  --surface: #ffffff;
+  --foreground: #191741; /* commercetools ink */
+  --muted: #5a5a72; /* commercetools grey */
+  --border: #e6e6f0; /* lilac-grey */
+  --accent: #6359ff; /* commercetools purple */
+  --accent-fg: #ffffff;
+  --accent-soft: #eeecff; /* light lilac */
+  --accent-dark: #4e43d8; /* commercetools indigo */
+  --positive: #059669; /* emerald-600 */
+  --warning: #d97706; /* amber-600 */
+  --critical: #dc2626; /* red-600 — errors / destructive only */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-dark: var(--accent-dark);
+  --color-positive: var(--positive);
+  --color-warning: var(--warning);
+  --color-critical: var(--critical);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+}

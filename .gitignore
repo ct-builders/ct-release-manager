@@ -1,0 +1,57 @@
+# Applies across every package. Each package also carries the few ignores that
+# are specific to its own toolchain.
+
+# dependencies
+node_modules/
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# env files — never commit one. `.env.example` is the documented template.
+.env
+.env*.local
+.env.*
+!.env.example
+# commercetools admin credential files
+*.admin.env
+
+# build output
+.next/
+out/
+build/
+dist/
+coverage/
+# the Merchant Center apps compile into their own public/
+packages/mc-releases/public/
+packages/mc-branch-editor/public/
+# serialized release bundles written by the deploy CLI
+bundles/
+
+# playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# hosting
+.netlify
+.vercel
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# misc
+.DS_Store
+*.pem
