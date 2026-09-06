@@ -40,3 +40,35 @@ export function formatMoney(centAmount: number, currencyCode: string, fractionDi
   const digits = fractionDigits ?? currencyFractionDigits(currencyCode);
   return formatAmount(centAmount / 10 ** digits, currencyCode);
 }
+
+// ---------------------------------------------------------------------------
+// editable amounts
+// ---------------------------------------------------------------------------
+
+/*
+ * The helpers above are for DISPLAY and go through Intl, which is what makes
+ * them currency-correct. The two below are for the value of a
+ * `<input type="number">`, and deliberately do not: Intl adds grouping
+ * separators and a currency symbol, and both make a number input reject its own
+ * value. So an editable amount is plain `toFixed(2)`.
+ */
+
+/**
+ * Normalize an editable amount, for an input's `onBlur`.
+ *
+ * A blank field stays blank, because "no price" has to stay expressible — the
+ * editors treat empty and zero differently, and snapping empty to "0.00" would
+ * silently create a free product. Anything else lands on two decimals, so a
+ * typed "50" shows as "50.00" once the field loses focus rather than looking
+ * like a different number from every other amount on the page.
+ */
+export const amountField2 = (v: string): string =>
+  v == null || String(v).trim() === "" ? "" : (Number(v) || 0).toFixed(2);
+
+/**
+ * Two-decimal display of a bare amount, with no currency symbol — for text that
+ * supplies its own currency code alongside it. Blank and NaN both render
+ * "0.00". Prefer `formatMoney` anywhere the symbol is wanted.
+ */
+export const amount2 = (v: string | number | null | undefined): string =>
+  (Number(v) || 0).toFixed(2);

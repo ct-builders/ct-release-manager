@@ -8,6 +8,7 @@
 
 import { useMemo, useState } from "react";
 import type { AttrDef, CtAction, EditVariant } from "@/lib/product-editor-types";
+import { amountField2 } from "@/lib/money";
 import { CURRENCY } from "@/lib/config";
 
 type Vals = Record<string, unknown>;
@@ -110,13 +111,7 @@ function AttrInput({ def, value, onChange, disabled, inputCls }: { def: AttrDef;
   }
   if (def.type === "money") {
     const m = (value as { currencyCode?: string; centAmount?: number }) || {};
-    return (
-      <div className="flex items-center gap-2">
-        <input type="number" step="0.01" className={inputCls} value={m.centAmount != null ? m.centAmount / 100 : ""} disabled={disabled}
-          onChange={(e) => onChange({ currencyCode: m.currencyCode || CURRENCY, centAmount: e.target.value === "" ? 0 : Math.round(Number(e.target.value) * 100) })} />
-        <span className="text-sm text-muted">{m.currencyCode || CURRENCY}</span>
-      </div>
-    );
+    return <MoneyInput m={m} onChange={onChange} disabled={disabled} inputCls={inputCls} />;
   }
   if (def.type === "enum" || def.type === "lenum") {
     return (
@@ -135,6 +130,46 @@ function AttrInput({ def, value, onChange, disabled, inputCls }: { def: AttrDef;
   // text / ltext / date fallback
   const type = def.type === "date" ? "date" : "text";
   return <input type={type} className={inputCls} value={value == null ? "" : String(value)} disabled={disabled} onChange={(e) => onChange(e.target.value)} />;
+}
+
+/**
+ * A money attribute, which needs its own component because it is the one input
+ * here whose displayed text differs from the model behind it.
+ *
+ * The model holds `centAmount`, an integer. Deriving the field's value from it
+ * as `centAmount / 100` makes trailing zeros unrepresentable — 5000 renders as
+ * "50", never "50.00" — so the text is local state, and every keystroke syncs
+ * the parsed `centAmount` up to the parent for save and diff. On blur the text
+ * snaps to two decimals; the parent already has the number by then, so this
+ * only settles what is on screen.
+ */
+function MoneyInput({ m, onChange, disabled, inputCls }: {
+  m: { currencyCode?: string; centAmount?: number };
+  onChange: (v: unknown) => void;
+  disabled: boolean;
+  inputCls: string;
+}) {
+  const [text, setText] = useState(m.centAmount != null ? (m.centAmount / 100).toFixed(2) : "");
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        step="0.01"
+        className={inputCls}
+        value={text}
+        disabled={disabled}
+        onChange={(e) => {
+          setText(e.target.value);
+          onChange({
+            currencyCode: m.currencyCode || CURRENCY,
+            centAmount: e.target.value === "" ? 0 : Math.round(Number(e.target.value) * 100),
+          });
+        }}
+        onBlur={() => setText((t) => amountField2(t))}
+      />
+      <span className="text-sm text-muted">{m.currencyCode || CURRENCY}</span>
+    </div>
+  );
 }
 
 function TagsInput({ def, value, onChange, disabled }: { def: AttrDef; value: string[]; onChange: (v: string[]) => void; disabled: boolean }) {

@@ -8,6 +8,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import type { EditProduct, EditVariant, CtAction, PriceRefs } from "@/lib/product-editor-types";
+import { amountField2 } from "@/lib/money";
 import { resolveColumns, EMPTY_PREF, type ColumnPref } from "@/lib/columns";
 import ColumnManager from "@/components/console/ColumnManager";
 import { useColumnPref } from "@/components/console/useColumnPref";
@@ -362,7 +363,7 @@ export function PricesEditor({ variant, refs, apply, disabled, busy, releaseActi
               // allow free entry while typing (incl. a trailing dot / up to 2 decimals)
               if (/^\d*\.?\d{0,2}$/.test(e.target.value)) setRow(i, { amount: e.target.value });
             }}
-            onBlur={() => setRow(i, { amount: r.amount === "" ? "" : (Number(r.amount) || 0).toFixed(2) })}
+            onBlur={() => setRow(i, { amount: amountField2(r.amount) })}
           />
         );
       case "currencyCode":

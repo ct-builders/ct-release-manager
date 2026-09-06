@@ -9,6 +9,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createProductAction } from "@/lib/actions";
+import { amountField2 } from "@/lib/money";
 import CategoryPicker from "@/components/categories/CategoryPicker";
 import type { CategoryNode } from "@/lib/categories";
 import {
@@ -144,7 +145,7 @@ export default function CreateProductWizard({ categoryNodes }: { categoryNodes: 
                     <span className={label}>Price</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted">{CURRENCY_SYMBOL}</span>
-                      <input className={`${input} max-w-40`} type="number" step="0.01" min="0" value={f.price} placeholder="0.00" onChange={(e) => set({ price: e.target.value })} />
+                      <input className={`${input} max-w-40`} type="number" step="0.01" min="0" value={f.price} placeholder="0.00" onChange={(e) => set({ price: e.target.value })} onBlur={(e) => set({ price: amountField2(e.target.value) })} />
                       <span className="text-sm text-muted">{CURRENCY}</span>
                     </div>
                     <p className={hint}>You can add more currencies and regional prices later.</p>

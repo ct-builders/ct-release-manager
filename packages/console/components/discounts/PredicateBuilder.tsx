@@ -8,6 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CategoryOption } from "@/lib/categories";
+import { amountField2 } from "@/lib/money";
 import { FACET_ATTRIBUTE } from "@/lib/config";
 import {
   buildFields,
@@ -445,7 +446,7 @@ function ValueInput(props: {
     case "money":
       return (
         <span className="flex items-center gap-1">
-          <input className={`${inp} w-24`} type="number" step="0.01" value={cond.text} disabled={disabled} onChange={(e) => props.onPatch({ text: e.target.value })} placeholder="0.00" />
+          <input className={`${inp} w-24`} type="number" step="0.01" value={cond.text} disabled={disabled} onChange={(e) => props.onPatch({ text: e.target.value })} onBlur={(e) => props.onPatch({ text: amountField2(e.target.value) })} placeholder="0.00" />
           <select className={`${inp} w-20`} value={cond.currency} disabled={disabled} onChange={(e) => props.onPatch({ currency: e.target.value })}>
             {CURRENCIES.map((c) => (
               <option key={c}>{c}</option>

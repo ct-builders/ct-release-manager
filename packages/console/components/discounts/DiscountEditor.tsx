@@ -14,6 +14,7 @@ import type { DiscountEdit, CartDiscountRef } from "@/lib/discounts";
 import type { DiscountGroupOption } from "@/lib/discount-groups";
 import type { CategoryOption } from "@/lib/categories";
 import { slugifyKey } from "@/lib/slug";
+import { amount2, amountField2 } from "@/lib/money";
 import PredicateBuilder from "./PredicateBuilder";
 import PriorityManager from "./PriorityManager";
 import type { LayoutData } from "@/lib/discount-layout-types";
@@ -223,7 +224,7 @@ export default function DiscountEditor({
 
   const productPreview = useMemo(() => {
     if (!isProduct) return "";
-    const v = p.valueType === "relative" ? `${p.percent || 0}%` : p.valueType === "external" ? "an external price" : `${p.amount || 0} ${p.currency}`;
+    const v = p.valueType === "relative" ? `${p.percent || 0}%` : p.valueType === "external" ? "an external price" : `${amount2(p.amount)} ${p.currency}`;
     let scope: string;
     if (p.categoryKey && p.facet.trim()) scope = `${catName(p.categoryKey)} from ${p.facet.trim()}`;
     else if (p.categoryKey) scope = `${catName(p.categoryKey)}${p.includeSub ? " (incl. subcategories)" : ""}`;
@@ -456,7 +457,7 @@ export default function DiscountEditor({
                     <span className="text-xs text-muted">{c.valueType === "fixed" ? "Fixed price per item (one amount per currency)" : "Amount off (one amount per currency)"}</span>
                     {c.money.map((row, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <input className={`${input} w-28`} type="number" step="0.01" min="0" value={row.amount} disabled={disabled} onChange={(e) => setMoneyRow(i, { amount: e.target.value })} />
+                        <input className={`${input} w-28`} type="number" step="0.01" min="0" value={row.amount} disabled={disabled} onChange={(e) => setMoneyRow(i, { amount: e.target.value })} onBlur={(e) => setMoneyRow(i, { amount: amountField2(e.target.value) })} />
                         <select className={`${input} w-24`} value={row.currencyCode} disabled={disabled} onChange={(e) => setMoneyRow(i, { currencyCode: e.target.value })}>{CURRENCIES.map((x) => <option key={x}>{x}</option>)}</select>
                         {c.money.length > 1 && <button type="button" onClick={() => rmMoneyRow(i)} disabled={disabled} className="rounded-md border border-border px-2 py-1 text-xs text-muted hover:text-critical disabled:opacity-50">✕</button>}
                       </div>
@@ -600,7 +601,7 @@ export default function DiscountEditor({
                   )}
                   {p.valueType === "absolute" && (
                     <>
-                      <input className={`${input} w-28`} type="number" step="0.01" min="0" value={p.amount} disabled={disabled} onChange={(e) => up({ amount: e.target.value })} />
+                      <input className={`${input} w-28`} type="number" step="0.01" min="0" value={p.amount} disabled={disabled} onChange={(e) => up({ amount: e.target.value })} onBlur={(e) => up({ amount: amountField2(e.target.value) })} />
                       <select className={`${input} w-24`} value={p.currency} disabled={disabled} onChange={(e) => up({ currency: e.target.value })}>{CURRENCIES.map((x) => <option key={x}>{x}</option>)}</select>
                     </>
                   )}
@@ -632,7 +633,7 @@ export default function DiscountEditor({
                   )}
                   {p.valueType === "absolute" && (
                     <>
-                      <input className={`${input} w-28`} type="number" step="0.01" min="0" value={p.amount} disabled={disabled} onChange={(e) => up({ amount: e.target.value })} />
+                      <input className={`${input} w-28`} type="number" step="0.01" min="0" value={p.amount} disabled={disabled} onChange={(e) => up({ amount: e.target.value })} onBlur={(e) => up({ amount: amountField2(e.target.value) })} />
                       <select className={`${input} w-24`} value={p.currency} disabled={disabled} onChange={(e) => up({ currency: e.target.value })}>{CURRENCIES.map((x) => <option key={x}>{x}</option>)}</select>
                     </>
                   )}

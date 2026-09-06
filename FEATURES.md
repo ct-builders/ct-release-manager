@@ -584,6 +584,26 @@ editing a release's working copy without leaving Merchant Center.
   project's own categories, prices and active discount codes);
   `reconcile-branch-registry` audits and repairs the branch asset registry against the
   working-copy resources that physically exist.
+- **Fill an empty authoring project from production** (`tools/provision-stage.mjs`,
+  `--dry-run` / `--verify` / `--only=`): copies project settings, custom-field types, tax
+  categories, product types, zones, channels, customer groups, recurrence policies, states,
+  categories, shipping methods, promotions, stores, products, inventory and custom objects,
+  in dependency order, rewriting every reference by key. This is how a project created
+  "from scratch" gets a catalog — commercetools offers a sample dataset only in the
+  creation form and nothing can add one afterwards. Re-runnable: each stage matches
+  existing rows by key (by `(sku, supplyChannel)` for inventory, `container/key` for custom
+  objects) and skips them, so an interrupted run resumes. Three cases it handles that
+  otherwise corrupt the target silently — the target's languages, currencies and countries
+  are widened to the union of both projects' settings *and* every locale, price and tax
+  rate found in the data, because a product can carry a locale its project no longer lists;
+  enum attributes are written as the bare key though they read back as `{key, label}`; and
+  a price's uniqueness scope includes `recurrencePolicy`, without which a subscription
+  product's per-interval prices collapse into duplicates and commercetools rejects the
+  create. Reference *attributes* take two passes, since their values are `{typeId, id}`
+  rather than keys, so a product pointing at another product is created first and the
+  reference set once every target id exists. Deliberately skips customers (a password
+  cannot be exported, so copies would be accounts nobody can sign into) and orders (they
+  reference customers, and a staging catalog needs no history).
 - **MIT, `AS IS`, unsupported.** Every source file carries an SPDX header; the terms are in
   [`LICENSE`](LICENSE), and [`SUPPORT.md`](SUPPORT.md) covers what to check before pointing
   this at a production project.
